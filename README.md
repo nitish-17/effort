@@ -21,9 +21,9 @@ Welcome to the **Effort Map & Calendar**! This application is designed to be ent
 - Break down each Goal into chronological **Sub-Goals** (Roadmap nodes) to track phases of achievement.
 - Toggle completion statuses of Sub-Goals and track relative days to dates (e.g. `+5` days, `-3` days, or `today`).
 
-#### 3. Action Reference (Tasks)
-- Add granular **Actions** under individual Sub-Goals.
-- View a aggregated "Action Reference" list to act as guidelines for your scheduling.
+#### 3. Task Reference
+- Add granular **Tasks** under individual Sub-Goals.
+- View an aggregated "Task Reference" list to act as guidelines for your scheduling.
 - Cards feature checkbox toggles with clean line-through transitions for completed tasks, and multiline text formatting.
 
 #### 4. Effort Calendar (Scheduler)

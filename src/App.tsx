@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import { MapPanel } from './components/MapPanel';
 import { CalendarPanel } from './components/CalendarPanel';
 import { exportLocalBackup, importLocalBackup } from './db/backupService';
-import { Download, Upload, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, Upload, CircleDot, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const App: React.FC = () => {
   const { initData } = useStore();
@@ -80,8 +80,8 @@ export const App: React.FC = () => {
       {/* Top Application Bar */}
       <header className="app-header">
         <div className="header-logo">
-          <Target size={20} style={{ color: 'var(--brand-primary)' }} />
-          <span>Effort Map & Calendar</span>
+          <CircleDot size={20} style={{ color: 'var(--brand-primary)' }} />
+          <span>effort</span>
         </div>
 
         <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

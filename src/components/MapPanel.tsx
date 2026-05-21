@@ -325,12 +325,12 @@ export const MapPanel: React.FC = () => {
           <div className="split-column">
             <div className="column-header">
               <span className="column-title">
-                <Award size={14} /> Action Reference ({areaTasks.length})
+                <Award size={14} /> Task Reference ({areaTasks.length})
               </span>
             </div>
             <div className="column-content">
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', padding: '6px 10px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border-color)' }}>
-                Showing all actions under this area. Use them as guidelines to draft your calendar effort cards.
+                Showing all tasks under this area. Use them as guidelines to draft your calendar effort cards.
               </div>
               
               {areaTasks.map((task) => (
@@ -381,10 +381,10 @@ export const MapPanel: React.FC = () => {
                     </div>
                     
                     <div className="list-item-actions">
-                      <button className="list-item-action-icon-btn" title="Edit Action" onClick={() => { setSelectedTaskForEdit(task); setIsTaskOpen(true); }}>
+                      <button className="list-item-action-icon-btn" title="Edit Task" onClick={() => { setSelectedTaskForEdit(task); setIsTaskOpen(true); }}>
                         <Edit2 size={10} />
                       </button>
-                      <button className="list-item-action-icon-btn delete" title="Delete Action" onClick={() => deleteTask(task.id)}>
+                      <button className="list-item-action-icon-btn delete" title="Delete Task" onClick={() => deleteTask(task.id)}>
                         <Trash2 size={10} />
                       </button>
                     </div>
@@ -617,7 +617,7 @@ export const MapPanel: React.FC = () => {
           <div className="split-column">
             <div className="column-header">
               <span className="column-title">
-                <Award size={14} /> Actions ({goalTasks.length})
+                <Award size={14} /> Tasks ({goalTasks.length})
               </span>
               {selectedSubGoalId && (
                 <button className="btn btn-primary btn-sm" onClick={() => { setSelectedTaskForEdit(null); setIsTaskOpen(true); }}>
@@ -628,7 +628,7 @@ export const MapPanel: React.FC = () => {
             <div className="column-content">
               {!selectedSubGoalId && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', padding: '6px 10px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border-color)' }}>
-                  Viewing all actions under this goal. Select a specific Sub-Goal in Column 2 to manage or add new actions.
+                  Viewing all tasks under this goal. Select a specific Sub-Goal in Column 2 to manage or add new tasks.
                 </div>
               )}
 
@@ -680,10 +680,10 @@ export const MapPanel: React.FC = () => {
                     </div>
                     
                     <div className="list-item-actions">
-                      <button className="list-item-action-icon-btn" title="Edit Action" onClick={() => { setSelectedTaskForEdit(task); setIsTaskOpen(true); }}>
+                      <button className="list-item-action-icon-btn" title="Edit Task" onClick={() => { setSelectedTaskForEdit(task); setIsTaskOpen(true); }}>
                         <Edit2 size={10} />
                       </button>
-                      <button className="list-item-action-icon-btn delete" title="Delete Action" onClick={() => deleteTask(task.id)}>
+                      <button className="list-item-action-icon-btn delete" title="Delete Task" onClick={() => deleteTask(task.id)}>
                         <Trash2 size={10} />
                       </button>
                     </div>
