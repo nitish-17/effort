@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/effort/assets/index-XqC4xkwf.js"></script>
+    <script type="module" crossorigin src="/effort/assets/index-9AOKesTg.js"></script>
     <link rel="stylesheet" crossorigin href="/effort/assets/index-D96WneuP.css">
   <link rel="manifest" href="/effort/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/effort/registerSW.js"></script></head>
   <body>
@@ -17,6 +17,10 @@
       (function() {
         const theme = localStorage.getItem('effort_theme') || 'light';
         document.body.className = 'theme-' + theme;
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.content = theme === 'light' ? '#ffffff' : '#0d0d10';
+        document.head.appendChild(meta);
       })();
     </script>
     <div id="root"></div>
