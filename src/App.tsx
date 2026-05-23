@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import { MapPanel } from './components/MapPanel';
 import { CalendarPanel } from './components/CalendarPanel';
 import { exportLocalBackup, importLocalBackup } from './db/backupService';
-import { Download, Upload, CircleDot, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const App: React.FC = () => {
   const { initData } = useStore();
@@ -17,6 +17,31 @@ export const App: React.FC = () => {
 
   const [isResizing, setIsResizing] = useState(false);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('effort_theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.body.className = `theme-${theme}`;
+    localStorage.setItem('effort_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const setDark = () => setTheme('dark');
+    const setLight = () => setTheme('light');
+
+    window.addEventListener('set-theme-dark', setDark);
+    window.addEventListener('set-theme-light', setLight);
+
+    return () => {
+      window.removeEventListener('set-theme-dark', setDark);
+      window.removeEventListener('set-theme-light', setLight);
+    };
+  }, []);
 
   // Initialize IndexedDB database load on mount
   useEffect(() => {
@@ -75,41 +100,25 @@ export const App: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handleExport = () => {
+      exportLocalBackup();
+    };
+    const handleImport = () => {
+      fileInputRef.current?.click();
+    };
+
+    window.addEventListener('backup-export', handleExport);
+    window.addEventListener('backup-import', handleImport);
+
+    return () => {
+      window.removeEventListener('backup-export', handleExport);
+      window.removeEventListener('backup-import', handleImport);
+    };
+  }, []);
+
   return (
     <div className="app-container">
-      {/* Top Application Bar */}
-      <header className="app-header">
-        <div className="header-logo">
-          <CircleDot size={20} style={{ color: 'var(--brand-primary)' }} />
-          <span>effort</span>
-        </div>
-
-        <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button 
-            className="btn btn-secondary btn-sm" 
-            onClick={exportLocalBackup}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Upload size={14} />
-            <span>Export Backup</span>
-          </button>
-          
-          <label 
-            className="btn btn-secondary btn-sm" 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}
-          >
-            <Download size={14} />
-            <span>Import Backup</span>
-            <input 
-              type="file" 
-              accept=".json" 
-              style={{ display: 'none' }} 
-              onChange={handleImportFile} 
-            />
-          </label>
-        </div>
-      </header>
-
       {/* Workspace Area */}
       <main className="app-workspace" ref={workspaceRef}>
         {/* Left Map Panel */}
@@ -146,6 +155,14 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        accept=".json" 
+        style={{ display: 'none' }} 
+        onChange={handleImportFile} 
+      />
 
       {/* Global spinning keyframe stylesheet */}
       <style>{`

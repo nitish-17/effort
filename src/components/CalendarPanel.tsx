@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { EffortCardDialog } from './Dialogs';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { EffortCard } from '../domain/types';
 
-// Helper to format dates consistently (YYYY-MM-DD)
+// Helper to format dates consistently (YYYY-MM-DD) in local timezone
 const formatDateString = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 const getDayName = (date: Date): string => {
@@ -26,14 +29,21 @@ const formatDuration = (totalMinutes: number): string => {
   return `${hours}h ${minutes}m`;
 };
 
-const HOUR_HEIGHT = 240;
-
 export const CalendarPanel: React.FC = () => {
   const { effortCards, addEffortCard, updateEffortCard, deleteEffortCard } = useStore();
 
-  const [viewType, setViewType] = useState<1 | 2 | 3>(3);
+  const [hourHeight, setHourHeight] = useState<number>(() => {
+    const stored = localStorage.getItem('effort_calendar_zoom');
+    if (stored) {
+      const val = Number(stored);
+      if (val === 30 || val === 60 || val === 120 || val === 180 || val === 240) return val;
+    }
+    return 240; // default zoom
+  });
+
+  const [viewType, setViewType] = useState<1 | 2 | 3>(1);
   const [anchorDate, setAnchorDate] = useState<Date>(new Date());
-  
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<EffortCard | null>(null);
@@ -58,19 +68,69 @@ export const CalendarPanel: React.FC = () => {
   const timeGridRef = useRef<HTMLDivElement>(null);
   const hasDraggedRef = useRef(false);
 
+  // Convert time string "HH:MM" to vertical pixel offset
+  const timeToPixels = useCallback((timeStr: string): number => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return (hours + minutes / 60) * hourHeight;
+  }, [hourHeight]);
+
+  // Convert vertical pixel offset to time string "HH:MM" (snapped to 15-min intervals)
+  const pixelsToTime = useCallback((pixels: number): string => {
+    const totalMinutes = Math.max(0, Math.min(1439, Math.round((pixels / hourHeight) * 4) * 15));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }, [hourHeight]);
+
   // Update current time indicator line
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 30000);
     return () => clearInterval(timer);
   }, []);
 
-  // Scroll to morning hours (e.g., 7:00 AM) on load
+  // Listen for calendar zoom events
   useEffect(() => {
-    if (timeGridRef.current) {
-      // 7 AM is 7 * HOUR_HEIGHT
-      timeGridRef.current.scrollTop = 7 * HOUR_HEIGHT;
-    }
+    const handleZoomIn = () => {
+      setHourHeight((prev) => {
+        const next =
+          prev === 30 ? 60 :
+          prev === 60 ? 120 :
+          prev === 120 ? 180 :
+          prev === 180 ? 240 :
+          prev;
+        localStorage.setItem('effort_calendar_zoom', String(next));
+        return next;
+      });
+    };
+    const handleZoomOut = () => {
+      setHourHeight((prev) => {
+        const next =
+          prev === 240 ? 180 :
+          prev === 180 ? 120 :
+          prev === 120 ? 60 :
+          prev === 60 ? 30 :
+          prev;
+        localStorage.setItem('effort_calendar_zoom', String(next));
+        return next;
+      });
+    };
+
+    window.addEventListener('calendar-zoom-in', handleZoomIn);
+    window.addEventListener('calendar-zoom-out', handleZoomOut);
+    return () => {
+      window.removeEventListener('calendar-zoom-in', handleZoomIn);
+      window.removeEventListener('calendar-zoom-out', handleZoomOut);
+    };
   }, []);
+
+  // Scroll to morning hours (e.g., 7:00 AM) on load
+  const initialScrollDoneRef = useRef(false);
+  useEffect(() => {
+    if (timeGridRef.current && !initialScrollDoneRef.current) {
+      timeGridRef.current.scrollTop = 7 * hourHeight;
+      initialScrollDoneRef.current = true;
+    }
+  }, [hourHeight]);
 
   // Get dates to render based on viewType and anchorDate
   const getDatesToRender = (): Date[] => {
@@ -107,11 +167,11 @@ export const CalendarPanel: React.FC = () => {
     setAnchorDate(newAnchor);
   };
 
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     setAnchorDate(new Date());
     if (timeGridRef.current) {
       const now = new Date();
-      const indicatorY = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
+      const indicatorY = (now.getHours() + now.getMinutes() / 60) * hourHeight;
       const containerHeight = timeGridRef.current.clientHeight;
       const targetScrollTop = indicatorY - containerHeight / 2;
       const maxScrollTop = timeGridRef.current.scrollHeight - containerHeight;
@@ -122,21 +182,13 @@ export const CalendarPanel: React.FC = () => {
         behavior: 'smooth'
       });
     }
-  };
+  }, [hourHeight]);
 
-  // Convert time string "HH:MM" to vertical pixel offset
-  const timeToPixels = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return (hours + minutes / 60) * HOUR_HEIGHT; // HOUR_HEIGHT px per hour
-  };
-
-  // Convert vertical pixel offset to time string "HH:MM" (snapped to 15-min intervals)
-  const pixelsToTime = (pixels: number): string => {
-    const totalMinutes = Math.max(0, Math.min(1439, Math.round((pixels / HOUR_HEIGHT) * 4) * 15));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
+  // Listen for keyboard shortcut 'c' → go to today
+  useEffect(() => {
+    window.addEventListener('goto-today', handleToday);
+    return () => window.removeEventListener('goto-today', handleToday);
+  }, [handleToday]);
 
   // Drag and drop event handlers
   const handleCardMouseDown = (
@@ -151,7 +203,7 @@ export const CalendarPanel: React.FC = () => {
     hasDraggedRef.current = false;
 
     const initialTop = timeToPixels(card.startTime);
-    const initialHeight = (card.durationMinutes / 60) * HOUR_HEIGHT;
+    const initialHeight = (card.durationMinutes / 60) * hourHeight;
 
     setActiveDrag({
       cardId: card.id,
@@ -179,23 +231,25 @@ export const CalendarPanel: React.FC = () => {
         hasDraggedRef.current = true;
       }
 
+      const minCardHeight = Math.max(15, (15 / 60) * hourHeight);
+
       if (activeDrag.type === 'resize-bottom') {
         // Resize duration from bottom handle
-        const newHeight = Math.max(40, activeDrag.initialHeight + deltaY); // min 10 min
-        const durationMinutes = Math.round((newHeight / HOUR_HEIGHT) * 60);
+        const newHeight = Math.max(minCardHeight, activeDrag.initialHeight + deltaY);
+        const durationMinutes = Math.round((newHeight / hourHeight) * 60);
         updateEffortCard(card.id, { durationMinutes });
       } else if (activeDrag.type === 'resize-top') {
         // Resize start time from top handle
-        const newTop = Math.max(0, Math.min(24 * HOUR_HEIGHT - 40, activeDrag.initialTop + deltaY));
-        const newHeight = Math.max(40, activeDrag.initialHeight - (newTop - activeDrag.initialTop));
+        const newTop = Math.max(0, Math.min(24 * hourHeight - minCardHeight, activeDrag.initialTop + deltaY));
+        const newHeight = Math.max(minCardHeight, activeDrag.initialHeight - (newTop - activeDrag.initialTop));
         
         const startTime = pixelsToTime(newTop);
-        const durationMinutes = Math.round((newHeight / HOUR_HEIGHT) * 60);
+        const durationMinutes = Math.round((newHeight / hourHeight) * 60);
 
         updateEffortCard(card.id, { startTime, durationMinutes });
       } else if (activeDrag.type === 'move') {
         // Move card vertically (time) and horizontally (day column)
-        const newTop = Math.max(0, Math.min(24 * HOUR_HEIGHT - activeDrag.initialHeight, activeDrag.initialTop + deltaY));
+        const newTop = Math.max(0, Math.min(24 * hourHeight - activeDrag.initialHeight, activeDrag.initialTop + deltaY));
         const startTime = pixelsToTime(newTop);
 
         // Determine column drag delta
@@ -224,7 +278,7 @@ export const CalendarPanel: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [activeDrag, effortCards, dayCount, datesToRender]);
+  }, [activeDrag, effortCards, dayCount, datesToRender, hourHeight, pixelsToTime, updateEffortCard]);
 
   // Double click on empty space in grid to create effort card
   const handleGridDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date) => {
@@ -261,19 +315,19 @@ export const CalendarPanel: React.FC = () => {
   };
 
   return (
-    <div className="calendar-panel" style={{ flex: 1 }}>
+    <div className="calendar-panel" style={{ flex: 1, '--hour-height': `${hourHeight}px` } as React.CSSProperties}>
       {/* Calendar Header */}
       <div className="calendar-header">
-        <div className="calendar-controls" style={{ width: '100%', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button className="btn-icon" onClick={handlePrev}>
-              <ChevronLeft size={16} />
+        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <button className="btn-icon" style={{ width: '24px', height: '24px' }} onClick={handlePrev}>
+              <ChevronLeft size={14} />
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={handleToday}>
+            <button className="btn btn-secondary btn-sm" style={{ padding: '3px 8px', fontSize: '0.75rem' }} onClick={handleToday}>
               Today
             </button>
-            <button className="btn-icon" onClick={handleNext}>
-              <ChevronRight size={16} />
+            <button className="btn-icon" style={{ width: '24px', height: '24px' }} onClick={handleNext}>
+              <ChevronRight size={14} />
             </button>
           </div>
 
@@ -293,11 +347,8 @@ export const CalendarPanel: React.FC = () => {
             const isToday = formatDateString(date) === formatDateString(new Date());
             return (
               <div key={date.getTime()} className={`day-header-cell ${isToday ? 'is-today' : ''}`}>
-                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                  {getDayName(date)}
-                </span>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                  {date.getDate()}
+                <span className="day-header-text">
+                  {getDayName(date)} {date.getDate()}
                 </span>
               </div>
             );
@@ -324,7 +375,7 @@ export const CalendarPanel: React.FC = () => {
               const isToday = formatDateString(date) === formatDateString(new Date());
               if (!isToday) return null;
 
-              const indicatorY = (currentTime.getHours() + currentTime.getMinutes() / 60) * HOUR_HEIGHT;
+              const indicatorY = (currentTime.getHours() + currentTime.getMinutes() / 60) * hourHeight;
               const colWidthPercent = 100 / dayCount;
               const leftOffset = idx * colWidthPercent;
 
@@ -354,7 +405,7 @@ export const CalendarPanel: React.FC = () => {
                 >
                   {dayCards.map((card) => {
                     const top = timeToPixels(card.startTime);
-                    const height = (card.durationMinutes / 60) * HOUR_HEIGHT;
+                    const height = (card.durationMinutes / 60) * hourHeight;
 
                     return (
                       <div
@@ -363,11 +414,10 @@ export const CalendarPanel: React.FC = () => {
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
-                          '--accent-color': card.color,
-                          '--accent-color-glow': `${card.color}26` // glow transparency
+                          padding: height < 30 ? '2px 6px' : undefined,
                         } as React.CSSProperties}
                         onMouseDown={(e) => handleCardMouseDown(e, card, 'move', dateIdx)}
-                        onClick={(e) => {
+                        onDoubleClick={(e) => {
                           e.stopPropagation();
                           if (hasDraggedRef.current) {
                             hasDraggedRef.current = false;
@@ -376,58 +426,67 @@ export const CalendarPanel: React.FC = () => {
                           setSelectedCard(card);
                           setIsDialogOpen(true);
                         }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                       >
                         {/* Top resize handle */}
-                        <div 
-                          className="card-resize-handle card-resize-handle-top" 
-                          onMouseDown={(e) => handleCardMouseDown(e, card, 'resize-top', dateIdx)}
-                        />
+                        {height >= 20 && (
+                          <div 
+                            className="card-resize-handle card-resize-handle-top" 
+                            onMouseDown={(e) => handleCardMouseDown(e, card, 'resize-top', dateIdx)}
+                          />
+                        )}
 
                         {/* Event Content */}
-                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', pointerEvents: 'none', overflow: 'hidden' }}>
-                          <span className="card-title-text">{card.title}</span>
-                          <span className="card-time-text">
-                            <span>
-                              {card.startTime} ({formatDuration(card.durationMinutes)})
-                            </span>
-                            {card.status === 'draft' && (
-                              <button 
-                                className="btn btn-primary btn-sm" 
-                                style={{ pointerEvents: 'auto', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px' }}
-                                onClick={(e) => { e.stopPropagation(); toggleCardExecution(card); }}
-                              >
-                                Commit
-                              </button>
-                            )}
-                            {card.status === 'active' && (
-                              <button 
-                                className="btn btn-sm" 
-                                style={{ 
-                                  pointerEvents: 'auto', 
-                                  backgroundColor: 'var(--accent-red)', 
-                                  color: '#fff',
-                                  fontSize: '0.65rem', 
-                                  padding: '2px 6px', 
-                                  borderRadius: '4px'
-                                }}
-                                onClick={(e) => { e.stopPropagation(); toggleCardExecution(card); }}
-                              >
-                                Stop
-                              </button>
-                            )}
-                            {card.status === 'completed' && (
-                              <span style={{ color: 'var(--accent-green)', fontWeight: 600, fontSize: '0.65rem' }}>
-                                Done
+                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: height < 45 ? 'center' : 'space-between', pointerEvents: 'none', overflow: 'hidden' }}>
+                          <span className="card-title-text" style={{ fontSize: height < 30 ? '0.68rem' : undefined }}>{card.title}</span>
+                          {height >= 45 && (
+                            <span className="card-time-text">
+                              <span>
+                                {card.startTime} ({formatDuration(card.durationMinutes)})
                               </span>
-                            )}
-                          </span>
+                              {card.status === 'draft' && (
+                                <button 
+                                  className="btn btn-primary btn-sm" 
+                                  style={{ pointerEvents: 'auto', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px' }}
+                                  onClick={(e) => { e.stopPropagation(); toggleCardExecution(card); }}
+                                >
+                                  Commit
+                                </button>
+                              )}
+                              {card.status === 'active' && (
+                                <button 
+                                  className="btn btn-sm" 
+                                  style={{ 
+                                    pointerEvents: 'auto', 
+                                    backgroundColor: 'var(--accent-red)', 
+                                    color: '#fff',
+                                    fontSize: '0.65rem', 
+                                    padding: '2px 6px', 
+                                    borderRadius: '4px'
+                                  }}
+                                  onClick={(e) => { e.stopPropagation(); toggleCardExecution(card); }}
+                                >
+                                  Stop
+                                </button>
+                              )}
+                              {card.status === 'completed' && (
+                                <span style={{ color: 'var(--accent-green)', fontWeight: 600, fontSize: '0.65rem' }}>
+                                  Done
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </div>
 
                         {/* Bottom resize handle */}
-                        <div 
-                          className="card-resize-handle card-resize-handle-bottom" 
-                          onMouseDown={(e) => handleCardMouseDown(e, card, 'resize-bottom', dateIdx)}
-                        />
+                        {height >= 20 && (
+                          <div 
+                            className="card-resize-handle card-resize-handle-bottom" 
+                            onMouseDown={(e) => handleCardMouseDown(e, card, 'resize-bottom', dateIdx)}
+                          />
+                        )}
                       </div>
                     );
                   })}

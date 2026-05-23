@@ -4,12 +4,11 @@ import { useStore } from '../store/useStore';
 export function exportLocalBackup() {
   const store = useStore.getState();
   const backupData = {
-    version: 1,
+    version: 2,
     timestamp: Date.now(),
     data: {
       lifeAreas: store.lifeAreas,
       goals: store.goals,
-      subGoals: store.subGoals,
       tasks: store.tasks,
       effortCards: store.effortCards,
     },
