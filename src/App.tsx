@@ -28,6 +28,14 @@ export const App: React.FC = () => {
   useEffect(() => {
     document.body.className = `theme-${theme}`;
     localStorage.setItem('effort_theme', theme);
+
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.setAttribute('content', theme === 'light' ? '#ffffff' : '#0d0d10');
   }, [theme]);
 
   useEffect(() => {

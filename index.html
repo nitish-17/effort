@@ -15,6 +15,10 @@
       (function() {
         const theme = localStorage.getItem('effort_theme') || 'light';
         document.body.className = 'theme-' + theme;
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.content = theme === 'light' ? '#ffffff' : '#0d0d10';
+        document.head.appendChild(meta);
       })();
     </script>
     <div id="root"></div>
