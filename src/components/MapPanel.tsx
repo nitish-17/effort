@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { ItemDialog } from './Dialogs';
 import { HelpDialog } from './HelpDialog';
+import { VersionDialog } from './VersionDialog';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { Plus } from 'lucide-react';
 import type { LifeArea, Goal, Task } from '../domain/types';
@@ -43,6 +44,9 @@ export const MapPanel: React.FC = () => {
   // Help dialog state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
+  // Version dialog state
+  const [isVersionOpen, setIsVersionOpen] = useState(false);
+
   // Active keyboard focused column state
   const [focusedColumn, setFocusedColumn] = useState<'area' | 'goal' | 'task' | null>(null);
 
@@ -63,6 +67,7 @@ export const MapPanel: React.FC = () => {
     updateTask(task.id, { status: task.status === 'completed' ? 'todo' : 'completed' });
   }, [updateTask]);
   const openHelp = useCallback(() => { setIsHelpOpen(true); }, []);
+  const openVersion = useCallback(() => { setIsVersionOpen(true); }, []);
 
   // Keyboard navigation
   useKeyboardNav({
@@ -82,8 +87,9 @@ export const MapPanel: React.FC = () => {
     openNewGoal,
     openNewTask,
     toggleTaskDone,
-    isAnyDialogOpen: isAreaOpen || isGoalOpen || isTaskOpen || isHelpOpen,
+    isAnyDialogOpen: isAreaOpen || isGoalOpen || isTaskOpen || isHelpOpen || isVersionOpen,
     openHelp,
+    openVersion,
     onFocusedColumnChange: setFocusedColumn,
   });
 
@@ -293,6 +299,11 @@ export const MapPanel: React.FC = () => {
       <HelpDialog
         isOpen={isHelpOpen}
         onClose={() => setIsHelpOpen(false)}
+      />
+
+      <VersionDialog
+        isOpen={isVersionOpen}
+        onClose={() => setIsVersionOpen(false)}
       />
     </div>
   );

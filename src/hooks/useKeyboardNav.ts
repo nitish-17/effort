@@ -34,6 +34,9 @@ interface UseKeyboardNavOptions {
   // Help
   openHelp: () => void;
 
+  // Version
+  openVersion: () => void;
+
   // Focus callback
   onFocusedColumnChange?: (col: 'area' | 'goal' | 'task' | null) => void;
 }
@@ -295,6 +298,12 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
         case '?': {
           e.preventDefault();
           o.openHelp();
+          return;
+        }
+
+        case 'v': {
+          e.preventDefault();
+          o.openVersion();
           return;
         }
 

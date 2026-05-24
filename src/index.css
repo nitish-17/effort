@@ -394,10 +394,13 @@ button, input, textarea, select {
 }
 
 .custom-checkbox.checked::after {
-  content: '✓';
-  color: #09090b;
-  font-size: 0.65rem;
-  font-weight: 900;
+  content: '';
+  width: 4px;
+  height: 8px;
+  border: solid #09090b;
+  border-width: 0 2.2px 2.2px 0;
+  transform: rotate(45deg);
+  margin-top: -1px;
 }
 
 body.theme-light .custom-checkbox.checked {
@@ -405,7 +408,7 @@ body.theme-light .custom-checkbox.checked {
 }
 
 body.theme-light .custom-checkbox.checked::after {
-  color: #ffffff;
+  border-color: #ffffff;
 }
 
 /* Right Panel: Calendar Container */
@@ -723,8 +726,14 @@ body.theme-light .custom-checkbox.checked::after {
 }
 
 /* Scrollable Help Dialog Table */
+.dialog-content.help-dialog {
+  max-width: 520px;
+  padding: 20px 24px 24px 24px;
+  gap: 12px;
+}
+
 .help-table-container {
-  max-height: 280px;
+  max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -743,22 +752,22 @@ body.theme-light .custom-checkbox.checked::after {
 }
 
 .help-key-cell {
-  padding: 6px 10px 6px 0;
+  padding: 8px 12px 8px 0;
   white-space: nowrap;
   width: 1%;
 }
 
 .help-desc-cell {
-  padding: 6px 0;
-  font-size: 0.8rem;
+  padding: 8px 0;
+  font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
 .help-kbd {
   display: inline-block;
-  padding: 2px 6px;
-  font-size: 0.7rem;
-  font-family: var(--font-body);
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  font-family: monospace, var(--font-body);
   font-weight: 700;
   color: var(--text-primary);
   background-color: var(--bg-card);

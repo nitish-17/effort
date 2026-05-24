@@ -20,7 +20,9 @@ const shortcuts = [
   { keys: 'b → i', desc: 'Backup — import local data' },
   { keys: 's → d', desc: 'Set dark theme' },
   { keys: 's → l', desc: 'Set light theme' },
-  { keys: 'z → i / o', desc: 'Zoom calendar in / out' }
+  { keys: 'z → i / o', desc: 'Zoom calendar in / out' },
+  { keys: 'c', desc: 'Go to today and scroll to current time' },
+  { keys: 'v', desc: 'Version check (build date / time info)' }
 ];
 
 export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
@@ -28,7 +30,7 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="dialog-overlay" onClick={onClose}>
-      <div className="dialog-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+      <div className="dialog-content help-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h3 className="dialog-title">Keyboard Shortcuts</h3>
           <button className="btn-icon" onClick={onClose}>✕</button>
@@ -47,10 +49,6 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
               ))}
             </tbody>
           </table>
-        </div>
-
-        <div className="dialog-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
