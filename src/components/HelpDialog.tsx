@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface HelpDialogProps {
   isOpen: boolean;
@@ -6,16 +6,14 @@ interface HelpDialogProps {
 }
 
 const shortcuts = [
-  { keys: 'a', desc: 'Focus on Areas column' },
-  { keys: 'g', desc: 'Focus on Goals column' },
-  { keys: 't', desc: 'Focus on Tasks column' },
+  { keys: 'a', desc: 'New area' },
+  { keys: 'g', desc: 'New goal (area must be selected)' },
+  { keys: 't', desc: 'New task (goal must be selected)' },
   { keys: 'j / k', desc: 'Navigate down / up in focused column' },
+  { keys: 'h / l', desc: 'Navigate left / right across columns (Vim style)' },
   { keys: 'Shift + j / k', desc: 'Navigate down / up by 10 items' },
   { keys: 'e', desc: 'Edit focused item' },
   { keys: 'd', desc: 'Mark focused task as done / not done' },
-  { keys: 'n → a', desc: 'New area' },
-  { keys: 'n → g', desc: 'New goal (area must be selected)' },
-  { keys: 'n → t', desc: 'New task (goal must be selected)' },
   { keys: 'b → e', desc: 'Backup — export local data' },
   { keys: 'b → i', desc: 'Backup — import local data' },
   { keys: 's → d', desc: 'Set dark theme' },
@@ -26,6 +24,17 @@ const shortcuts = [
 ];
 
 export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (

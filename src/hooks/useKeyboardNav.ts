@@ -60,12 +60,7 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
     }
   }, []);
 
-  const setFocusedColumn = useCallback((col: 'area' | 'goal' | 'task' | null) => {
-    focusedColumnRef.current = col;
-    if (optsRef.current.onFocusedColumnChange) {
-      optsRef.current.onFocusedColumnChange(col);
-    }
-  }, []);
+
 
 
   const selectItemAtIndex = useCallback((column: 'area' | 'goal' | 'task', index: number) => {
@@ -85,6 +80,52 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
     }
   }, [getListForColumn]);
 
+  // Sync focus column and index with store selections to keep mouse & keyboard in sync
+  useEffect(() => {
+    const o = optsRef.current;
+    if (o.lifeAreas.length === 0) {
+      focusedColumnRef.current = null;
+      focusedIndexRef.current = 0;
+      if (o.onFocusedColumnChange) o.onFocusedColumnChange(null);
+      return;
+    }
+
+    // Default to first area if nothing selected
+    if (!o.selectedAreaId) {
+      o.setSelectedAreaId(o.lifeAreas[0].id);
+      focusedColumnRef.current = 'area';
+      focusedIndexRef.current = 0;
+      if (o.onFocusedColumnChange) o.onFocusedColumnChange('area');
+      return;
+    }
+
+    if (o.selectedTaskId) {
+      focusedColumnRef.current = 'task';
+      const idx = o.displayedTasks.findIndex((t) => t.id === o.selectedTaskId);
+      focusedIndexRef.current = idx >= 0 ? idx : 0;
+    } else if (o.selectedGoalId) {
+      focusedColumnRef.current = 'goal';
+      const idx = o.areaGoals.findIndex((g) => g.id === o.selectedGoalId);
+      focusedIndexRef.current = idx >= 0 ? idx : 0;
+    } else {
+      focusedColumnRef.current = 'area';
+      const idx = o.lifeAreas.findIndex((a) => a.id === o.selectedAreaId);
+      focusedIndexRef.current = idx >= 0 ? idx : 0;
+    }
+
+    if (o.onFocusedColumnChange) {
+      o.onFocusedColumnChange(focusedColumnRef.current);
+    }
+  }, [
+    opts.lifeAreas,
+    opts.areaGoals,
+    opts.displayedTasks,
+    opts.selectedAreaId,
+    opts.selectedGoalId,
+    opts.selectedTaskId,
+    opts.onFocusedColumnChange
+  ]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const o = optsRef.current;
@@ -97,30 +138,6 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
       const key = e.key;
-
-      // Handle pending 'n' prefix
-      if (pendingPrefixRef.current === 'n') {
-        pendingPrefixRef.current = null;
-        if (pendingTimeoutRef.current) {
-          clearTimeout(pendingTimeoutRef.current);
-          pendingTimeoutRef.current = null;
-        }
-
-        e.preventDefault();
-        switch (key) {
-          case 'a':
-            o.openNewArea();
-            return;
-          case 'g':
-            if (o.selectedAreaId) o.openNewGoal();
-            return;
-          case 't':
-            if (o.selectedGoalId) o.openNewTask();
-            return;
-          default:
-            return; // unknown second key — cancel prefix silently
-        }
-      }
 
       // Handle pending 'b' prefix
       if (pendingPrefixRef.current === 'b') {
@@ -189,48 +206,19 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
       switch (key) {
         case 'a': {
           e.preventDefault();
-          if (o.lifeAreas.length === 0) return;
-          setFocusedColumn('area');
-
-          if (o.selectedAreaId) {
-            const idx = o.lifeAreas.findIndex((a) => a.id === o.selectedAreaId);
-            focusedIndexRef.current = idx >= 0 ? idx : 0;
-          } else {
-            focusedIndexRef.current = 0;
-            selectItemAtIndex('area', 0);
-          }
+          o.openNewArea();
           return;
         }
 
         case 'g': {
           e.preventDefault();
-          if (!o.selectedAreaId || o.areaGoals.length === 0) return;
-          setFocusedColumn('goal');
-
-          if (o.selectedGoalId) {
-            const idx = o.areaGoals.findIndex((g) => g.id === o.selectedGoalId);
-            focusedIndexRef.current = idx >= 0 ? idx : 0;
-          } else {
-            focusedIndexRef.current = 0;
-            selectItemAtIndex('goal', 0);
-          }
+          if (o.selectedAreaId) o.openNewGoal();
           return;
         }
 
         case 't': {
           e.preventDefault();
-          if (o.displayedTasks.length === 0) return;
-          if (!o.selectedAreaId) return;
-          setFocusedColumn('task');
-
-          if (o.selectedTaskId) {
-            const idx = o.displayedTasks.findIndex((t) => t.id === o.selectedTaskId);
-            focusedIndexRef.current = idx >= 0 ? idx : 0;
-            if (idx < 0) selectItemAtIndex('task', 0);
-          } else {
-            focusedIndexRef.current = 0;
-            selectItemAtIndex('task', 0);
-          }
+          if (o.selectedGoalId) o.openNewTask();
           return;
         }
 
@@ -256,16 +244,6 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
           const idx = focusedIndexRef.current;
           if (idx < 0 || idx >= tasks.length) return;
           o.toggleTaskDone(tasks[idx]);
-          return;
-        }
-
-        case 'n': {
-          e.preventDefault();
-          pendingPrefixRef.current = 'n';
-          // Safety timeout — cancel prefix after 1 second
-          pendingTimeoutRef.current = setTimeout(() => {
-            pendingPrefixRef.current = null;
-          }, 1000);
           return;
         }
 
@@ -307,13 +285,6 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
           return;
         }
 
-        case 'Escape': {
-          e.preventDefault();
-          setFocusedColumn(null);
-          focusedIndexRef.current = 0;
-          return;
-        }
-
         case 'k': {
           e.preventDefault();
           const col = focusedColumnRef.current;
@@ -330,6 +301,34 @@ export function useKeyboardNav(opts: UseKeyboardNavOptions) {
           const list = getListForColumn(col);
           const newIdx = Math.min(list.length - 1, focusedIndexRef.current + 1);
           selectItemAtIndex(col, newIdx);
+          return;
+        }
+
+        case 'h': {
+          e.preventDefault();
+          const col = focusedColumnRef.current;
+          if (col === 'task') {
+            o.setSelectedTaskId(null);
+          } else if (col === 'goal') {
+            o.setSelectedGoalId(null);
+          }
+          return;
+        }
+
+        case 'l': {
+          e.preventDefault();
+          const col = focusedColumnRef.current;
+          if (col === 'area') {
+            if (o.areaGoals.length > 0) {
+              const targetGoalId = o.selectedGoalId || o.areaGoals[0].id;
+              o.setSelectedGoalId(targetGoalId);
+            }
+          } else if (col === 'goal') {
+            if (o.displayedTasks.length > 0) {
+              const targetTaskId = o.selectedTaskId || o.displayedTasks[0].id;
+              o.setSelectedTaskId(targetTaskId);
+            }
+          }
           return;
         }
 

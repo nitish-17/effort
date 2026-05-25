@@ -31,6 +31,17 @@ export const ItemDialog: React.FC<ItemDialogProps> = ({
   const [description, setDescription] = useState('');
 
   useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
     if (initialData) {
       setName(initialData.name);
       setDescription(initialData.description || '');
@@ -118,6 +129,17 @@ export const EffortCardDialog: React.FC<EffortCardDialogProps> = ({
   const [startTime, setStartTime] = useState('09:00');
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [status, setStatus] = useState<'draft' | 'active' | 'completed'>('draft');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (initialData) {

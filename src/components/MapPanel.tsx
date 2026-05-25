@@ -223,6 +223,7 @@ export const MapPanel: React.FC = () => {
                 key={task.id}
                 className={`list-item ${task.status === 'completed' ? 'list-item-completed' : ''} ${selectedTaskId === task.id ? 'selected' : ''}`}
                 style={{ flexDirection: 'column', alignItems: 'stretch' }}
+                onClick={() => setSelectedTaskId(task.id)}
                 onDoubleClick={(e) => { e.stopPropagation(); openEditTask(task); }}
               >
                 <div className="list-item-left">

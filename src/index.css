@@ -324,7 +324,7 @@ button, input, textarea, select {
 
 .list-item-left {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   flex: 1;
   min-width: 0;
@@ -400,7 +400,7 @@ button, input, textarea, select {
   border: solid #09090b;
   border-width: 0 2.2px 2.2px 0;
   transform: rotate(45deg);
-  margin-top: -1px;
+  margin-top: -2.5px;
 }
 
 body.theme-light .custom-checkbox.checked {
@@ -592,12 +592,7 @@ body.theme-light .custom-checkbox.checked::after {
   border-left-style: dashed;
 }
 
-/* Active status without pulsating animation */
-.effort-card-event.active {
-  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-hover) 100%);
-  box-shadow: 0 0 0 2px var(--accent-color, var(--brand-primary)), var(--shadow-lg);
-}
-
+.effort-card-event.active,
 .effort-card-event.completed {
   opacity: 0.8;
 }
